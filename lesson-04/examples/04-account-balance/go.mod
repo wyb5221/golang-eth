@@ -1,4 +1,4 @@
-module 03-tx-ops
+module 04-account-balance
 
 go 1.25.4
 

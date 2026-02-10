@@ -1,4 +1,4 @@
-module 03-tx-ops
+module 05-subscribe-blocks
 
 go 1.25.4
 
