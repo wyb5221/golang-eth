@@ -19,6 +19,7 @@ import (
 // 支持两种操作模式：
 // 1. 查询交易：--tx <hash> - 按哈希查询交易与回执，解析关键字段
 // 2. 发送交易：--send --to <address> --amount <eth> - 发起 ETH 转账交易
+// go run main.go --send --to 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC --amount 3
 // 使用本地私链的话，默认当前账户是第一个
 func main() {
 	//获取启动命令行中参数名称: `-tx` 的值
@@ -54,6 +55,7 @@ func sendTransaction(toAddrHex string, amountEth float64) {
 	}
 	//获取私钥
 	privKeyHex := os.Getenv("SENDER_PRIVATE_KEY")
+	fmt.Printf("私钥原始值: %s\n", privKeyHex)
 	if privKeyHex == "" {
 		log.Fatal("SENDER_PRIVATE_KEY is not set (required for send mode)")
 	}
@@ -81,8 +83,11 @@ func sendTransaction(toAddrHex string, amountEth float64) {
 	}
 	//获取转账账户
 	fromAddr := crypto.PubkeyToAddress(*publicKeyECDSA)
+	fmt.Printf("获取转账账户fromAddr: %s\n", fromAddr)
+
 	//获取转账接收账户
 	toAddr := common.HexToAddress(toAddrHex)
+	fmt.Printf("转账接收账户toAddr: %s\n", toAddr)
 
 	// 获取链 ID
 	chainID, err := client.ChainID(ctx)
@@ -137,6 +142,7 @@ func sendTransaction(toAddrHex string, amountEth float64) {
 
 	// 检查余额是否足够
 	balance, err := client.BalanceAt(ctx, fromAddr, nil)
+	fmt.Printf("转账账户余额balance: %s\n", balance)
 	if err != nil {
 		log.Fatalf("failed to get balance: %v", err)
 	}
@@ -153,14 +159,14 @@ func sendTransaction(toAddrHex string, amountEth float64) {
 
 	// 构造交易（EIP-1559 动态费用交易）
 	txData := &types.DynamicFeeTx{
-		ChainID:   chainID,
-		Nonce:     nonce,
-		GasTipCap: gasTipCap,
-		GasFeeCap: gasFeeCap,
-		Gas:       gasLimit,
-		To:        &toAddr,
-		Value:     valueWei,
-		Data:      nil,
+		ChainID:   chainID,   //链 ID
+		Nonce:     nonce,     //账户Nonce：发送方地址的交易序号。用于防止重放攻击和确保交易顺序。从0开始，每发一笔交易递增1。
+		GasTipCap: gasTipCap, // Gas Tip Cap：发送方愿意为每单位燃气支付的额外小费（以Wei为单位），激励矿工优先处理此交易
+		GasFeeCap: gasFeeCap, // Gas Fee Cap：发送方愿意为每单位燃气支付的最高费用（以Wei为单位）。如果交易执行所需的费用超过此值，交易会失败并消耗所有已用燃气。
+		Gas:       gasLimit,  // Gas Limit：发送方愿意为执行此交易支付的最大gas。如果交易执行所需超过此值，交易会失败并消耗所有已用燃气。
+		To:        &toAddr,   // 接收方地址：资金或合约调用发送到的地址。如果为 nil，表示这是一个“合约创建交易”。
+		Value:     valueWei,  // 转账金额：从发送方转移到接收方的原生代币数量（以太坊上为ETH），单位是Wei（1 ETH = 10^18 Wei）
+		Data:      nil,       // 输入数据：调用智能合约函数时附带的参数数据，或合约创建时的初始化代码。普通转账此项为空。
 	}
 	tx := types.NewTx(txData)
 
