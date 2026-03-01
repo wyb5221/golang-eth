@@ -263,6 +263,7 @@ func sendTransaction() {
 	fmt.Printf("Tx Hash    : %s\n", signedTx.Hash().Hex())
 	fmt.Println("\nTransaction is pending. Use --tx flag to query status:")
 	fmt.Printf("  go run main.go --tx %s\n", signedTx.Hash().Hex())
+	//Tx Hash    : 0x2fc001fd55bca7af3de17c642a2648d67df3e8e2456ea8e5d2f8f9c2a3daf096
 }
 
 // trim0x 移除十六进制字符串前缀 "0x"
